@@ -396,7 +396,7 @@ class Mock01<R> {
                     }
                     if (paramSize > 1) indent {
                         appendTextIndented("fun callsRemembered(")
-                        appendText(types.joinToString { "predicate$it: ($it) -> Boolean" })
+                        appendText(types.joinToString { "predicate$it: Predicate<$it>" })
                         appendText("): Int = callsRemembered { ")
                         appendText(arguments.joinToString())
                         appendText(" ->")
@@ -516,7 +516,7 @@ class Mock01<R> {
                     }
                     if (paramSize > 1) indent {
                         appendTextIndented("fun callsRemembered(")
-                        appendText(types.joinToString { "predicate$it: ($it) -> Boolean" })
+                        appendText(types.joinToString { "predicate$it: Predicate<$it>" })
                         appendText("): Int = callsRemembered { ")
                         appendText(arguments.joinToString())
                         appendText(" ->")

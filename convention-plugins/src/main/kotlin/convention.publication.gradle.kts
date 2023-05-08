@@ -4,6 +4,7 @@ import org.gradle.kotlin.dsl.signing
 import java.util.*
 
 plugins {
+    `java-library`
     `maven-publish`
     signing
 }
@@ -39,7 +40,39 @@ val javadocJar by tasks.registering(Jar::class) {
 
 fun getExtraString(name: String) = ext[name]?.toString()
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
 publishing {
+    publications {
+        create<MavenPublication>("simpleKMock") {
+            from(components["java"])
+            pom {
+                name.set("Simple KMock")
+                description.set("A simple mocking framework for Kotlin")
+                url.set("https://github.com/ldldev/simple-kmock")
+
+                licenses {
+                    license {
+                        name.set("MIT")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("ldldev")
+                        name.set("Lucas de Jong")
+                        email.set("dev.ldldevelopers@gmail.com")
+                    }
+                }
+                scm {
+                    url.set("https://github.com/ldldev/simple-kmock.git")
+                }
+            }
+        }
+    }
     // Configure maven central repository
     repositories {
         maven {
@@ -48,36 +81,6 @@ publishing {
             credentials {
                 username = getExtraString("ossrhUsername")
                 password = getExtraString("ossrhPassword")
-            }
-        }
-    }
-
-    // Configure all publications
-    publications.withType<MavenPublication> {
-        // Stub javadoc.jar artifact
-        artifact(javadocJar.get())
-
-        // Provide artifacts information required by Maven Central
-        pom {
-            name.set("Simple KMock")
-            description.set("A simple mocking framework for Kotlin")
-            url.set("https://github.com/ldldev/simple-kmock.git")
-
-            licenses {
-                license {
-                    name.set("MIT")
-                    url.set("https://opensource.org/licenses/MIT")
-                }
-            }
-            developers {
-                developer {
-                    id.set("ldldev")
-                    name.set("Lucas de Jong")
-                    email.set("dev.ldldevelopers@gmail.com")
-                }
-            }
-            scm {
-                url.set("https://github.com/ldldev/simple-kmock.git")
             }
         }
     }
