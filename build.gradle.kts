@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "1.8.0"
-    id("maven-publish")
+    id("convention.publication")
 }
 
 group = "dev.ldldevelopers"
