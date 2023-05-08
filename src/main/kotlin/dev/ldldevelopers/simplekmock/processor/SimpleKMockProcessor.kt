@@ -30,7 +30,7 @@ class SimpleKMockProcessor(
             val openProperties = classDeclaration.getAllProperties().filter { it.isOpen() }
             with(codeGenerator.createNewFile(Dependencies(true, classDeclaration.containingFile!!), packageName, classSimpleName + "Mock")) {
                 initIndentation {
-                    if (packageName.isNotBlank()) appendTextIndented("package $packageName")
+                    if (packageName.isNotBlank()) appendText("package $packageName")
                     appendLine()
                     appendTextIndented("import dev.ldldevelopers.simplekmock.*")
                     appendLine()
@@ -281,7 +281,7 @@ class SimpleKMockProcessor(
             with(codeGenerator.createNewFile(Dependencies(true), packageName, className)) {
                 appendText(
                     """
-dev.ldldevelopers.simplekmock
+package dev.ldldevelopers.simplekmock
 
 class Mock00 {
     private var callMock: () -> Unit = { throw MockNotSetException() }
@@ -318,7 +318,7 @@ class Mock00 {
             with(codeGenerator.createNewFile(Dependencies(true), packageName, className)) {
                 appendText(
                     """
-dev.ldldevelopers.simplekmock
+package dev.ldldevelopers.simplekmock
 
 class Mock01<R> {
     private var callMock: () -> R = { throw MockNotSetException() }
@@ -358,7 +358,7 @@ class Mock01<R> {
             val packageName = "dev.ldldevelopers.simplekmock"
             with(codeGenerator.createNewFile(Dependencies(true), packageName, className)) {
                 initIndentation {
-                    appendTextIndented("package $packageName")
+                    appendText("package $packageName")
                     appendLine()
                     appendTextIndented("class $className")
                     val types = buildList {
@@ -478,7 +478,7 @@ class Mock01<R> {
             val packageName = "dev.ldldevelopers.simplekmock"
             with(codeGenerator.createNewFile(Dependencies(true), packageName, className)) {
                 initIndentation {
-                    appendTextIndented("package $packageName")
+                    appendText("package $packageName")
                     appendLine()
                     appendTextIndented("class $className")
                     val types = buildList {
@@ -730,12 +730,8 @@ class SimpleKMockProcessorProvider : SymbolProcessorProvider {
 
 context(IndentHolder)
 private fun OutputStream.appendTextIndented(str: String) {
-    if (str.contains('\n')) {
-        appendLine()
-        write(("    ".repeat(indentLevel) + str).toByteArray())
-    } else {
-        str.split("\n").forEach { appendTextIndented(it) }
-    }
+    appendLine()
+    write(("    ".repeat(indentLevel) + str).toByteArray())
 }
 
 private fun OutputStream.appendText(str: String) {
