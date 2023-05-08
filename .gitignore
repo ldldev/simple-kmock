@@ -1,0 +1,6 @@
+.idea
+.gradle
+build
+convention-plugins/build
+local.properties
+convention-plugins/local.properties
