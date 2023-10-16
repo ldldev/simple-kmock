@@ -34,6 +34,7 @@ class SimpleKMockProcessor(
                     appendLine()
                     appendTextIndented("import dev.ldldevelopers.simplekmock.*")
                     appendLine()
+                    appendTextIndented("@Suppress(\"USELESS_CAST\", \"RemoveRedundantQualifierName\", \"OVERRIDE_DEPRECATION\", \"UNCHECKED_CAST\", \"RemoveEmptyPrimaryConstructor\", \"unused\", \"PropertyName\", \"KotlinRedundantDiagnosticSuppress\", \"RedundantSuppression\")")
                     appendTextIndented("class ${classSimpleName}Mock")
                     appendText(classDeclaration.getSimpleTypeParametersWithVarianceAsString())
                     if (isClass) {
@@ -283,6 +284,7 @@ class SimpleKMockProcessor(
                     """
 package dev.ldldevelopers.simplekmock
 
+@Suppress("unused")
 class Mock00 {
     private var callMock: () -> Unit = { throw MockNotSetException() }
     private var calls: Int = 0
@@ -320,6 +322,7 @@ class Mock00 {
                     """
 package dev.ldldevelopers.simplekmock
 
+@Suppress("unused")
 class Mock01<R> {
     private var callMock: () -> R = { throw MockNotSetException() }
     private var calls: Int = 0
@@ -357,134 +360,61 @@ class Mock01<R> {
             mocksGenerated.add(className)
             val packageName = "dev.ldldevelopers.simplekmock"
             with(codeGenerator.createNewFile(Dependencies(true), packageName, className)) {
-                initIndentation {
-                    appendText(
-"""
+                val types = buildList {
+                    for (i in 0 until paramSize) {
+                        if (i == 0) add("P0")
+                        else add("P$i")
+                    }
+                }
+                val typesAsString = types.joinToString()
+                val arguments = types.map { it.lowercase() }
+                val typedArguments = arguments.zip(types)
+                val unusedArguments = arguments.joinToString { "_" }
+                val argumentsAsString = arguments.joinToString()
+                val argumentsOnIt = arguments.joinToString { "it.$it" }
+                val anys = types.joinToString { "any()" }
+                val typedArgs = typedArguments.joinToString { "${it.first}: ${it.second}" }
+                val valTypedArgs = typedArguments.joinToString { "val ${it.first}: ${it.second}" }
+                val predicateArguments = types.joinToString { "predicate$it: Predicate<$it>" }
+                val andPredicates = typedArguments.joinToString(" && ") { "predicate${it.second}(${it.first})" }
+                appendText(
+                    """
 package $packageName
 
-""".trimIndent()
-                    )
-                    val types = buildList {
-                        for (i in 0 until paramSize) {
-                            if (i == 0) add("P0")
-                            else add("P$i")
-                        }
-                    }
-                    val typesAsString = types.joinToString()
-                    val arguments = types.map { it.lowercase() }
-                    val typedArguments = arguments.zip(types)
-                    val unusedArguments = arguments.joinToString { "_" }
-                    val argumentsAsString = arguments.joinToString()
-                    appendTextIndented(
-"""
+@Suppress("MemberVisibilityCanBePrivate", "unused")
 class $className<$typesAsString> {
-""".trimIndent()
-                    )
-                    indent {
-                        appendTextIndented(
-"""
     private var callMock: ($typesAsString) -> Unit = { $unusedArguments -> throw MockNotSetException() }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     private val callsRemembered = mutableListOf<CallHolder<$typesAsString>>()
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        val argumentsOnIt = arguments.joinToString { "it.$it" }
-                        appendTextIndented(
-"""
     fun callsRemembered(predicate: ($typesAsString) -> Boolean): Int = callsRemembered.count {
         predicate($argumentsOnIt)
     }
-""".trimIndent()
-                        )
-                    }
-                    if (paramSize > 1) indent {
-                        val predicateArguments = types.joinToString { "predicate$it: Predicate<$it>" }
-                        val andPredicates = typedArguments.joinToString(" && ") { "predicate${it.second}(${it.first})" }
-                        appendTextIndented(
-"""
-    fun callsRemembered($predicateArguments): Int = callsRemembered { $argumentsAsString -> 
+    ${if (paramSize > 1) {
+"""fun callsRemembered($predicateArguments): Int = callsRemembered { $argumentsAsString -> 
         $andPredicates
-    }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        val anys = types.joinToString { "any()" }
-                        appendTextIndented(
-"""
+    }"""} else ""}
     fun callsRemembered(): Int = callsRemembered($anys)
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     fun reset() {
         callsRemembered.clear()
         callMock = { $unusedArguments -> throw MockNotSetException() }
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     fun doesNothing() {
         callMock = { $unusedArguments ->  }
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     infix fun does(mock: ($typesAsString) -> Unit) {
         callMock = mock
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     infix fun throws(exception: Exception) {
         callMock = { $unusedArguments -> throw exception }
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        val typedArgs = typedArguments.joinToString { "${it.first}: ${it.second}" }
-                        appendTextIndented(
-"""
     fun call($typedArgs) {
         callsRemembered.add(CallHolder($argumentsAsString))
         callMock($argumentsAsString)
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        val valTypedArgs = typedArguments.joinToString { "val ${it.first}: ${it.second}" }
-                        appendTextIndented(
-"""
     private data class CallHolder<$typesAsString>($valTypedArgs)
-""".trimIndent()
-                        )
-                    }
-                    appendTextIndented(
-"""
 }
 
-""".trimIndent())
-                }
+""".trimIndent()
+                )
                 close()
             }
         }
@@ -493,174 +423,76 @@ class $className<$typesAsString> {
             mocksGenerated.add(className)
             val packageName = "dev.ldldevelopers.simplekmock"
             with(codeGenerator.createNewFile(Dependencies(true), packageName, className)) {
-                initIndentation {
+                val types = buildList {
+                    for (i in 0 until paramSize) {
+                        if (i == 0) add("P0")
+                        else add("P$i")
+                    }
+                }
+                val typesAsString = types.joinToString()
+                val arguments = types.map { it.lowercase() }
+                val typedArguments = arguments.zip(types)
+                val unusedArguments = arguments.joinToString { "_" }
+                val argumentsAsString = arguments.joinToString()
+                val argumentsOnIt = arguments.joinToString { "it.$it" }
+                val predicateArguments = types.joinToString { "predicate$it: Predicate<$it>" }
+                val andPredicates = typedArguments.joinToString(" && ") { "predicate${it.second}(${it.first})" }
+                val anys = types.joinToString { "any()" }
+                val typedArgs = typedArguments.joinToString { "${it.first}: ${it.second}" }
+                val valTypedArgs = typedArguments.joinToString { "val ${it.first}: ${it.second}" }
                     appendText(
 """
 package $packageName
 
-""".trimIndent()
-                    )
-                    val types = buildList {
-                        for (i in 0 until paramSize) {
-                            if (i == 0) add("P0")
-                            else add("P$i")
-                        }
-                    }
-                    val typesAsString = types.joinToString()
-                    val arguments = types.map { it.lowercase() }
-                    val typedArguments = arguments.zip(types)
-                    val unusedArguments = arguments.joinToString { "_" }
-                    val argumentsAsString = arguments.joinToString()
-                    appendTextIndented(
-"""
+@Suppress("MemberVisibilityCanBePrivate", "unused")
 class $className<$typesAsString, R> {    
-""".trimIndent()
-                    )
-                    indent {
-                        appendTextIndented(
-"""
     private var callMock: ($typesAsString) -> R = { $unusedArguments -> throw MockNotSetException() }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     private val callsRemembered = mutableListOf<CallHolder<$typesAsString>>()
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        val argumentsOnIt = arguments.joinToString { "it.$it" }
-                        appendTextIndented(
-"""
     fun callsRemembered(predicate: ($typesAsString) -> Boolean): Int = callsRemembered.count {
         predicate($argumentsOnIt)
     }
-""".trimIndent()
-                        )
-                    }
-                    if (paramSize > 1) indent {
-                        val predicateArguments = types.joinToString { "predicate$it: Predicate<$it>" }
-                        val andPredicates = typedArguments.joinToString(" && ") { "predicate${it.second}(${it.first})" }
-                        appendTextIndented(
-"""
-    fun callsRemembered($predicateArguments): Int = callsRemembered { $argumentsAsString ->
+    ${if (paramSize > 1) 
+"""fun callsRemembered($predicateArguments): Int = callsRemembered { $argumentsAsString ->
         $andPredicates
-    }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        val anys = types.joinToString { "any()" }
-                        appendTextIndented(
-"""
+    }""" else ""}
     fun callsRemembered(): Int = callsRemembered($anys)
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     fun reset() {
         callsRemembered.clear()
         callMock = { $unusedArguments -> throw MockNotSetException() }
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     infix fun answersWith(value: R) {
         callMock = { $unusedArguments -> value }
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     infix fun answersWithSequence(values: Iterable<R>) {
         val iterator = values.iterator()
         callMock = { $unusedArguments -> iterator.next() }
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     fun answersWithSequence(vararg values: R) {
         val iterator = values.iterator()
         callMock = { $unusedArguments -> iterator.next() }
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     infix fun answers(mock: ($typesAsString) -> R) {
         callMock = mock
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     infix fun answersSequence(mocks: Iterable<($typesAsString) -> R>) {
         val iterator = mocks.iterator()
         callMock = { $argumentsAsString -> iterator.next()($argumentsAsString) }
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     fun answersSequence(vararg mocks: ($typesAsString) -> R) {
         val iterator = mocks.iterator()
         callMock = { $argumentsAsString -> iterator.next()($argumentsAsString) }
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        appendTextIndented(
-"""
     infix fun throws(exception: Exception) {
         callMock = { $unusedArguments -> throw exception }
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        val typedArgs = typedArguments.joinToString { "${it.first}: ${it.second}" }
-                        appendTextIndented(
-"""
     fun call($typedArgs): R {
         callsRemembered.add(CallHolder($argumentsAsString))
         return callMock($argumentsAsString)
     }
-""".trimIndent()
-                        )
-                    }
-                    indent {
-                        val valTypedArgs = typedArguments.joinToString { "val ${it.first}: ${it.second}" }
-                        appendTextIndented(
-"""
     private data class CallHolder<$typesAsString>($valTypedArgs)
-""".trimIndent()
-                        )
-                    }
-                    appendTextIndented(
-"""
 }
 
 """.trimIndent())
-                }
                 close()
             }
         }
